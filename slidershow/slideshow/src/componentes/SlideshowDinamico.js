@@ -1,63 +1,46 @@
-import React, {useRef, useEffect, useState} from "react";
+import React, {useRef, useEffect, useCallback} from "react";
 import { ReactComponent as FlechaEsquerda } from "./../img/iconmonstr-angel-left-thin.svg";
 import { ReactComponent as FlechaDireita } from "./../img/iconmonstr-angel-right-thin.svg";
-import img1 from './../img/1.jpg';
-import img2 from './../img/2.jpg';
-import img3 from './../img/3.jpg';
-import img4 from './../img/4.jpg';
 import styled from "styled-components";
-import api from "../services/api";
 
-const Slideshow = () => {
+const Slideshow = ({
+        children, 
+        controles = false, 
+        autplay = false,  
+        velocidade = "500", 
+        intervalo = "5000" 
+    }) => {
+        const slideshow = useRef(null);
+        //referencia para retornar o
+        const intervaloSlideshow = useRef(null);
 
-
-    const [filmes, setFilmes] = useState([]);
-
-    useEffect(()=>{
-
-        async function loadFilmes(){
-            const response = await api.get('r-api/?api=filmes/')
-           console.log(response.data);
-           setFilmes(response.data);
-        }
-
-        loadFilmes();
-
-    }, []);
-
-
-
-
-    const slideshow = useRef(null);
-    //referencia para retornar o
-    const intervaloSlideshow = useRef(null);
-
-    const seguinte = () => {
-        //pegamos os elementos que contem no slide show
-        if(slideshow.current.children.length > 0){
-            //obtemos o primeiro elemento do slidershow
-            const primeiroElemento = slideshow.current.children[0];
-            //definindo a transição para o slidershow
-            slideshow.current.style.transition = `300ms ease-out all` ;
-            //calculando o tamanho do slidershow
-            const tamanhoSlider = slideshow.current.children[0].offsetWidth;
-            //movemos o slideshow
-            slideshow.current.style.transform = `translateX(-${tamanhoSlider}px)`;
-            //percorrer o slideshow
-            const transition = () => {
-                //reinicia a posição do slidershow
-                slideshow.current.style.transition = 'none';
-                slideshow.current.style.transform = `translateX(0)`;
-                //pegamos o primeiro slider e colocamos no final
-                slideshow.current.appendChild(primeiroElemento);
-                //remove o Eventlistener para prosseguir o retorno do slider
-                slideshow.current.removeEventListener('transitionend', transition);
+        const seguinte = useCallback(() => {
+            //pegamos os elementos que contem no slide show
+            if(slideshow.current.children.length > 0){
+                //obtemos o primeiro elemento do slidershow
+                const primeiroElemento = slideshow.current.children[0];
+                //definindo a transição para o slidershow
+                slideshow.current.style.transition = `${velocidade}ms ease-out all` ;
+                //calculando o tamanho do slidershow
+                const tamanhoSlider = slideshow.current.children[0].offsetWidth;
+                //movemos o slideshow
+                slideshow.current.style.transform = `translateX(-${tamanhoSlider}px)`;
+                //percorrer o slideshow
+                const transition = () => {
+                    //reinicia a posição do slidershow
+                    slideshow.current.style.transition = 'none';
+                    slideshow.current.style.transform = `translateX(0)`;
+                    //pegamos o primeiro slider e colocamos no final
+                    slideshow.current.appendChild(primeiroElemento);
+                    //remove o Eventlistener para prosseguir o retorno do slider
+                    slideshow.current.removeEventListener('transitionend', transition);
+                }
+                //Eventlistener para quando terminar a transição
+                slideshow.current.addEventListener('transitionend', transition);
+                
             }
-            //Eventlistener para quando terminar a transição
-            slideshow.current.addEventListener('transitionend', transition);
-            
-        }
-    }
+        }, [velocidade]);
+
     
     const anterior = () => {
         //pegamos os elementos que contem no slide show
@@ -77,7 +60,7 @@ const Slideshow = () => {
             //definindo animação
             setTimeout(() => {
                 //colocando a transição no slideshow
-                slideshow.current.style.transition = `300ms ease-out all`;
+                slideshow.current.style.transition = `${velocidade}ms ease-out all`;
                 //movemos o slideshow
                 slideshow.current.style.transform = `translateX(0)`;
             }, 30);
@@ -87,38 +70,39 @@ const Slideshow = () => {
 
     //userEffect permite passar uma função e esta função se executada todas as vezes que passa o parametro
     useEffect(() => {
-        //colocar um tempo para o slider ir automático
-        intervaloSlideshow.current = setInterval(() => {
-            seguinte();
-        }, 5000);
-
-        //eliminatndo o intervalo ao passa o mouse
-        slideshow.current.addEventListener('mouseenter', () => {
-            clearInterval(intervaloSlideshow.current);
-        });
-
-        //retornar o intervalo ao tirar o mouse
-        slideshow.current.addEventListener('mouseleave', () => {
+        //se existe autoplay
+        if(autplay){
+            //colocar um tempo para o slider ir automático
             intervaloSlideshow.current = setInterval(() => {
                 seguinte();
-            }, 5000);
-        });
-    }, []);
+            }, intervalo);
+
+            //eliminatndo o intervalo ao passa o mouse
+            slideshow.current.addEventListener('mouseenter', () => {
+                clearInterval(intervaloSlideshow.current);
+            });
+
+            //retornar o intervalo ao tirar o mouse
+            slideshow.current.addEventListener('mouseleave', () => {
+                intervaloSlideshow.current = setInterval(() => {
+                    seguinte();
+                }, intervalo);
+            });
+        }
+        
+    }, [autplay, intervalo, seguinte]);
     
 
     return (
-        <div className="container">   
-            <div className="lista-filmes">
-                {filmes.map((filme) => {
-                    return(
-                        <article key={filme.id}>
-                            <strong>{filme.nome}</strong>
-                            <img src={filme.foto} alt={filme.nome} />
-                        </article>
-                    )
-                })}
-            </div>
-        </div>
+        <ContainerPrincipal>
+            <ContainerSlidershow ref={slideshow}>
+                { children }
+            </ContainerSlidershow>
+            {controles && <Controles>
+                <Botao onClick={anterior}><FlechaEsquerda /></Botao>
+                <Botao direito onClick={seguinte}><FlechaDireita /></Botao>
+            </Controles>}
+        </ContainerPrincipal>
     );
 }
 

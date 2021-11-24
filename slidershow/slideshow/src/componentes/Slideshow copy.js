@@ -1,4 +1,4 @@
-import React, {useRef, useEffect} from "react";
+import React, {useRef, useEffect, useState} from "react";
 import { ReactComponent as FlechaEsquerda } from "./../img/iconmonstr-angel-left-thin.svg";
 import { ReactComponent as FlechaDireita } from "./../img/iconmonstr-angel-right-thin.svg";
 import img1 from './../img/1.jpg';
@@ -7,7 +7,41 @@ import img3 from './../img/3.jpg';
 import img4 from './../img/4.jpg';
 import styled from "styled-components";
 
+import api from "../services/apiSos";
+//import { Link } from 'react-router-dom';
+
 const Slideshow = () => {
+    
+       const config = {
+            headers: {
+                "Cache-Control": "no-cache",
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS"
+            }
+          };
+    
+
+        const [filmes, setFilmes] = useState([]);
+
+          useEffect(()=>{
+      
+              async function loadFilmes(){
+                  const response = await api.get('r-api/?api=filmes/')
+                 // console.log(response.data);
+                 setFilmes(response.data);
+              }
+      
+              loadFilmes();
+      
+          }, []);
+
+
+
+
+
+
+
     const slideshow = useRef(null);
     //referencia para retornar o
     const intervaloSlideshow = useRef(null);
@@ -127,6 +161,8 @@ const Slideshow = () => {
                 <Botao direito onClick={seguinte}><FlechaDireita /></Botao>
             </Controles>
         </ContainerPrincipal>
+
+        
     );
 }
 
@@ -205,4 +241,4 @@ const Botao = styled.button`
 `;
 
 //para reutilizar o componente slideshow, basta importar seus itens
-export {Slideshow, Slide, TextoSlide};
+export {Slideshow};
