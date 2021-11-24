@@ -1,62 +1,107 @@
-import React from "react";
+import React, {useRef, useEffect, useCallback} from "react";
 import { ReactComponent as FlechaEsquerda } from "./../img/iconmonstr-angel-left-thin.svg";
 import { ReactComponent as FlechaDireita } from "./../img/iconmonstr-angel-right-thin.svg";
-import img1 from './../img/1.jpg';
-import img2 from './../img/2.jpg';
-import img3 from './../img/3.jpg';
-import img4 from './../img/4.jpg';
 import styled from "styled-components";
 
-const seguinte = () => {
-    console.log('Seguinte');
-}
+const Slideshow = ({
+        children, 
+        controles = false, 
+        autplay = false,  
+        velocidade = "500", 
+        intervalo = "5000" 
+    }) => {
+        const slideshow = useRef(null);
+        //referencia para retornar o
+        const intervaloSlideshow = useRef(null);
 
-const anterior = () => {
-    console.log('Anterior');
-}
+        const seguinte = useCallback(() => {
+            //pegamos os elementos que contem no slide show
+            if(slideshow.current.children.length > 0){
+                //obtemos o primeiro elemento do slidershow
+                const primeiroElemento = slideshow.current.children[0];
+                //definindo a transição para o slidershow
+                slideshow.current.style.transition = `${velocidade}ms ease-out all` ;
+                //calculando o tamanho do slidershow
+                const tamanhoSlider = slideshow.current.children[0].offsetWidth;
+                //movemos o slideshow
+                slideshow.current.style.transform = `translateX(-${tamanhoSlider}px)`;
+                //percorrer o slideshow
+                const transition = () => {
+                    //reinicia a posição do slidershow
+                    slideshow.current.style.transition = 'none';
+                    slideshow.current.style.transform = `translateX(0)`;
+                    //pegamos o primeiro slider e colocamos no final
+                    slideshow.current.appendChild(primeiroElemento);
+                    //remove o Eventlistener para prosseguir o retorno do slider
+                    slideshow.current.removeEventListener('transitionend', transition);
+                }
+                //Eventlistener para quando terminar a transição
+                slideshow.current.addEventListener('transitionend', transition);
+                
+            }
+        }, [velocidade]);
 
+    
+    const anterior = () => {
+        //pegamos os elementos que contem no slide show
+        if(slideshow.current.children.length > 0){
+            //pegando o último elemento, -1, pois pega a última posição -1 para dar o último valor do vetor
+            const index = slideshow.current.children.length - 1;
+            //obtemos o último elemento do slideshow
+            const ultimoElemento = slideshow.current.children[index];
+            //percorrendo o último elemente e colocando em primeiro
+            slideshow.current.insertBefore(ultimoElemento, slideshow.current.firstChild);
+            //removendo a transição no slideshow
+            slideshow.current.style.transition = 'none';
+            //calculando o tamanho do slidershow
+            const tamanhoSlider = slideshow.current.children[0].offsetWidth;            
+            //movemos o slideshow
+            slideshow.current.style.transform = `translateX(-${tamanhoSlider}px)`;
+            //definindo animação
+            setTimeout(() => {
+                //colocando a transição no slideshow
+                slideshow.current.style.transition = `${velocidade}ms ease-out all`;
+                //movemos o slideshow
+                slideshow.current.style.transform = `translateX(0)`;
+            }, 30);
 
-const Slideshow = () => {
+        }
+    }
+
+    //userEffect permite passar uma função e esta função se executada todas as vezes que passa o parametro
+    useEffect(() => {
+        //se existe autoplay
+        if(autplay){
+            //colocar um tempo para o slider ir automático
+            intervaloSlideshow.current = setInterval(() => {
+                seguinte();
+            }, intervalo);
+
+            //eliminatndo o intervalo ao passa o mouse
+            slideshow.current.addEventListener('mouseenter', () => {
+                clearInterval(intervaloSlideshow.current);
+            });
+
+            //retornar o intervalo ao tirar o mouse
+            slideshow.current.addEventListener('mouseleave', () => {
+                intervaloSlideshow.current = setInterval(() => {
+                    seguinte();
+                }, intervalo);
+            });
+        }
+        
+    }, [autplay, intervalo, seguinte]);
+    
+
     return (
         <ContainerPrincipal>
-            <ContainerSlidershow>
-                <Slide>
-                    <a href="http://localhost:3000/">
-                        <img src={img1} alt="" />
-                    </a>
-                    <TextoSlide corFundo="#ffF000" corTexto="#000">
-                        <p>kkkkkkkkkkkkkkkkkkkkkkkkkkk</p>    
-                    </TextoSlide>
-                </Slide>
-                <Slide>
-                    <a href="http://localhost:3000/">
-                        <img src={img2} alt="" />
-                    </a>
-                    <TextoSlide>
-                        <p>kkkkkkkkkkkkkkkkkkkkkkkkkkk</p>    
-                    </TextoSlide>
-                </Slide>
-                <Slide>
-                    <a href="http://localhost:3000/">
-                        <img src={img3} alt="" />
-                    </a>
-                    <TextoSlide>
-                        <p>kkkkkkkkkkkkkkkkkkkkkkkkkkk</p>    
-                    </TextoSlide>
-                </Slide>
-                <Slide>
-                    <a href="http://localhost:3000/">
-                        <img src={img4} alt="" />
-                    </a>
-                    <TextoSlide>
-                        <p>kkkkkkkkkkkkkkkkkkkkkkkkkkk</p>    
-                    </TextoSlide>
-                </Slide>
+            <ContainerSlidershow ref={slideshow}>
+                { children }
             </ContainerSlidershow>
-            <Controles>
+            {controles && <Controles>
                 <Botao onClick={anterior}><FlechaEsquerda /></Botao>
                 <Botao direito onClick={seguinte}><FlechaDireita /></Botao>
-            </Controles>
+            </Controles>}
         </ContainerPrincipal>
     );
 }
@@ -135,4 +180,5 @@ const Botao = styled.button`
     ${props => props.direito ? 'right: 0' : 'left: 0'}
 `;
 
-export default Slideshow;
+//para reutilizar o componente slideshow, basta importar seus itens
+export {Slideshow, Slide, TextoSlide};
